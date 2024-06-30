@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 axum = "0.7"
-tokio = { version = "1.38", features = ["full"] }
+ructe = "0.17"
+tokio = { version = "1", features = ["full"] }
 tower = "0.4"

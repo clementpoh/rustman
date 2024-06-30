@@ -3,33 +3,39 @@ use std::{env, error::Error};
 use axum::{http::header::HeaderMap, response::Html, routing::get, Router};
 use tokio::{fs::File, io::AsyncReadExt};
 
-const INDEX: &str = "assets/index.html";
+const INDEX_FILE: &str = "assets/index.rs.html";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let index = get_page_content().await?;
-
-    eprintln!("Working directory: {:?}", env::current_dir().unwrap());
-
-    let app = Router::new().route("/", get(|headers| root(headers, index)));
+    let content = get_page_content().await?;
+    let app = Router::new().route("/", get(|headers| root(headers, content)));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
+
+    eprintln!(
+        "Working directory: {:?}",
+        env::current_dir().unwrap_or("Could not get working directory".into())
+    );
 
     Ok(())
 }
 
 async fn get_page_content() -> Result<String, Box<dyn Error>> {
-    let mut file = File::open(INDEX).await?;
-    let mut index = vec![];
-    file.read_to_end(&mut index).await?;
+    let mut file = File::open(INDEX_FILE)
+        .await
+        .expect(&format!("Could not open `{}`", INDEX_FILE));
 
-    // let index = fs::read_to_string(INDEX).expect("Could not read index.html");
-    Ok(String::from_utf8(index)?)
+    let mut content = vec![];
+    file.read_to_end(&mut content)
+        .await
+        .expect(&format!("Could not read `{}`", INDEX_FILE));
+
+    Ok(String::from_utf8(content).expect(&format!("Could not convert {}", INDEX_FILE)))
 }
 
-async fn root(headers: HeaderMap, index: String) -> Html<String> {
+async fn root(headers: HeaderMap, content: String) -> Html<String> {
     eprintln!("{:?}", headers);
     // format!("{:#?}", headers)
-    Html(index)
+    Html(content)
 }
